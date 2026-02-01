@@ -2,17 +2,11 @@
 //! 
 //! Architecture:
 //! - IPC thread: blocking on niri event stream (no polling)
-//! - Dispatch task: applies state mutations async
-//! - UI subscribers: read via watch::channel (zero-copy Arc slices)
+//! - Dispatch: state mutations via watch::channel
+//! - UI: reads Arc<[T]> slices (zero-copy)
 
-mod ipc;
-mod state;
-mod wayland;
-mod ui;
-
-use ipc::IpcStream;
-use state::DockState;
-use std::sync::Arc;
+use niri_dock::ipc::IpcStream;
+use niri_dock::state::DockState;
 use tokio::sync::watch;
 use tracing::info;
 
@@ -30,13 +24,11 @@ async fn main() -> anyhow::Result<()> {
         tokio::task::spawn_blocking(move || ipc_stream.run(tx))
     };
 
-    // UI event loop (Qt/other)
     let ui_handle = {
         let rx = state_rx.clone();
-        tokio::spawn(ui::run_ui(rx))
+        tokio::spawn(niri_dock::ui::run_ui(rx))
     };
 
-    // Graceful shutdown
     tokio::signal::ctrl_c().await?;
     drop(state_tx);
 
