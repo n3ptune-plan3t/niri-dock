@@ -1,9 +1,11 @@
+//! UI event loop
+
 use crate::state::DockState;
 use tokio::sync::watch;
 use tracing::debug;
 
+/// Placeholder UI loop—integrate Qt/Wayland here
 pub async fn run_ui(mut state_rx: watch::Receiver<DockState>) -> anyhow::Result<()> {
-    // Placeholder: integrate Qt/wayland here
     loop {
         if state_rx.changed().await.is_err() {
             break;
@@ -16,7 +18,8 @@ pub async fn run_ui(mut state_rx: watch::Receiver<DockState>) -> anyhow::Result<
         for tile in &tiles {
             debug!(
                 "  [{},{}] {} ({})",
-                tile.column, tile.tile, tile.app_id, if tile.is_focused { "focused" } else { "" }
+                tile.column, tile.tile, tile.app_id,
+                if tile.is_focused { "focused" } else { "" }
             );
         }
     }
