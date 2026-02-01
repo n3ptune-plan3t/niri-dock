@@ -1,0 +1,58 @@
+[package]
+name = "niri-dock"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.84"  # 2025-02 stable
+authors = ["n3ptune-plan3t"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/n3ptune-plan3t/niri-dock"
+description = "Event-driven, resource-efficient dock for Niri with fractional scaling"
+
+[dependencies]
+# IPC protocol
+niri-ipc = "=25.11"
+
+# Async runtime
+tokio = { version = "1.42", features = ["io-util", "macros", "rt", "signal", "sync", "time"] }
+
+# Serialization
+serde_json = "1.0"
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "ansi"] }
+
+# Wayland protocol
+wayland-client = "0.31"
+wayland-protocols = "0.31"
+wayland-protocols-wlr = "0.31"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Qt FFI (optional, for future GUI integration)
+cxx = { version = "1.0", optional = true }
+
+[features]
+default = []
+qt-ui = ["cxx"]
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[profile.dev]
+opt-level = 1
+debug = true
+
+[lints.rust]
+unsafe_code = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+pedantic = "warn"
+nursery = "warn"
