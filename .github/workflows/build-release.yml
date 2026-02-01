@@ -1,0 +1,82 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  RUST_VERSION: 1.84
+
+jobs:
+  build-artix:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Update system
+        run: pacman -Syu --noconfirm
+
+      - name: Install build deps
+        run: |
+          pacman -S --noconfirm \
+            base-devel \
+            rust \
+            cargo \
+            git \
+            wayland-protocols \
+            libwayland
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Rust version
+        run: rustc --version && cargo --version
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-directories: target
+
+      - name: Build release
+        run: cargo build --release --locked
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+
+      - name: Strip binary
+        run: strip target/release/niri-dock
+
+      - name: Build Arch package
+        run: |
+          mkdir -p build
+          cp target/release/niri-dock build/
+          cat > build/PKGBUILD << 'EOF'
+          pkgname=niri-dock
+          pkgver=${CI_TAG#v}
+          pkgrel=1
+          pkgdesc="Event-driven dock for Niri WM"
+          arch=('x86_64')
+          url="https://github.com/${{ github.repository }}"
+          license=('MIT' 'Apache-2.0')
+          depends=('libwayland')
+          
+          package() {
+            install -Dm755 niri-dock "$pkgdir/usr/bin/niri-dock"
+          }
+          EOF
+          cd build
+          chmod +x niri-dock
+          tar -czf ../niri-dock-${CI_TAG#v}-1-x86_64.pkg.tar.zst niri-dock
+        env:
+          CI_TAG: ${{ github.ref_name }}
+
+      - name: Upload release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.pkg.tar.zst"
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
