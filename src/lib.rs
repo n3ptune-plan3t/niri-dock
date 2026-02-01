@@ -1,28 +1,11 @@
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use niri_ipc::{Window, Workspace};
+#![warn(missing_docs)]
+//! Resource-efficient event-driven dock for Niri window manager
 
-mod ipc;
-mod wayland;
-mod fractional_scale;
+pub mod ipc;
+pub mod state;
+pub mod ui;
+pub mod wayland;
 
-pub use ipc::IpcClient;
-pub use wayland::WaylandDock;
-pub use fractional_scale::FractionalScaleHandler;
-
-#[derive(Debug, Clone)]
-pub struct DockState {
-    pub windows: Arc<RwLock<Vec<Window>>>,
-    pub workspaces: Arc<RwLock<Vec<Workspace>>>,
-    pub scale: Arc<RwLock<f64>>,
-}
-
-impl DockState {
-    pub fn new() -> Self {
-        Self {
-            windows: Arc::new(RwLock::new(Vec::new())),
-            workspaces: Arc::new(RwLock::new(Vec::new())),
-            scale: Arc::new(RwLock::new(1.0)),
-        }
-    }
-}
+pub use state::{DockState, TileView};
+pub use ipc::IpcStream;
+pub use wayland::DockSurface;
