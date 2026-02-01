@@ -1,3 +1,5 @@
+//! Event-driven IPC to niri compositor
+
 use niri_ipc::{Event, Request, Socket, Window, Workspace};
 use std::time::Duration;
 use tokio::sync::watch;
@@ -5,9 +7,11 @@ use tracing::{debug, error, warn};
 
 use crate::state::DockState;
 
+/// Blocking IPC event loop
 pub struct IpcStream;
 
 impl IpcStream {
+    /// Create new IPC stream handler
     pub fn new() -> Self {
         Self
     }
@@ -60,24 +64,26 @@ impl IpcStream {
 
         match event {
             WindowsChanged { windows } => {
-                let mut state = state_tx.borrow_mut();
-                state.set_windows(windows.clone());
+                state_tx.send_modify(|state| state.set_windows(windows.clone()));
             }
             WorkspacesChanged { workspaces } => {
-                let mut state = state_tx.borrow_mut();
-                state.set_workspaces(workspaces.clone());
+                state_tx.send_modify(|state| state.set_workspaces(workspaces.clone()));
             }
             WindowLayoutsChanged { changes } => {
-                let mut state = state_tx.borrow_mut();
-                state.apply_layout_changes(changes);
+                state_tx.send_modify(|state| state.apply_layout_changes(changes));
             }
             WindowFocusChanged { id } => {
-                let mut state = state_tx.borrow_mut();
-                state.set_focused_window(*id);
+                state_tx.send_modify(|state| state.set_focused_window(*id));
             }
-            _ => {} // Ignore irrelevant events
+            _ => {}
         }
 
         debug!("state updated: {} windows", state_tx.borrow().windows.len());
+    }
+}
+
+impl Default for IpcStream {
+    fn default() -> Self {
+        Self::new()
     }
 }
